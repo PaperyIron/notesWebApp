@@ -8,6 +8,7 @@ import os
 app = Flask(__name__)
 
 app.config['SECRET_KEY'] = 'TEST'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///notes.db'
 
 db.init_app(app)
 bcrypt.init_app(app)
@@ -281,8 +282,31 @@ class FoldersDetail(Resource):
         
     def put(self, folder_id):
         user_id = session.get('user_id')
+        if not user_id:
+            return {'error': 'Unauthorized'}, 401
+    
+        folder = Folder.query.filter_by(id=folder_id, user_id=user_id).first()
+        if not folder:
+            return {'error': 'Folder not found'}, 404
+    
+        try:
+            data = request.get_json()
+            if not data:
+                return {'error': 'No data provided'}, 400
         
-    def delete_folder(self, folder_id):
+            if 'name' in data:
+                folder.name = data['name']
+            if 'color' in data:
+                folder.color = data['color']
+        
+            db.session.commit()
+            return folder.to_dict(), 200
+    
+        except Exception as e:
+            db.session.rollback()
+            return {'error': str(e)}, 500
+        
+    def delete(self, folder_id):
         user_id = session.get('user_id')
         if not user_id:
             return {'error': 'Unauthorized'}, 401
