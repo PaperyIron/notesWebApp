@@ -46,9 +46,9 @@ def signup():
         return jsonify(new_user.to_dict()), 201
     
     except ValueError as e:
-        return jsonify({'error': str(e)})
+        return jsonify({'error': str(e)}), 422
     except Exception as e:
-        return jsonify({'error': str(e)})
+        return jsonify({'error': str(e)}), 500
     
 @app.route('/login', methods=['POST'])
 def login():
@@ -93,10 +93,10 @@ def logout():
     return jsonify({}), 200
 
 class NotesList(Resource):
-    def get_all_notes(self):
+    def get(self):
         user_id = session.get('user_id')
         if not user_id:
-            return jsonify({'error': 'Unauthorized'}), 401
+            return {'error': 'Unauthorized'}, 401
 
         limit = request.args.get('limit', 20, type=int)
         offset = request.args.get('offset', 0, type=int)
@@ -143,7 +143,7 @@ class NotesList(Resource):
                 return {'error': 'Title is required'}, 400
             
             if not folder_id:
-                return {'error': 'Folder id is required'}
+                return {'error': 'Folder id is required'}, 400
             
             folder = Folder.query.filter_by(id=folder_id, user_id=user_id).first()
             if not folder:
@@ -152,7 +152,8 @@ class NotesList(Resource):
             new_note = Note(
                 title = title,
                 content = content,
-                folder_id = folder_id
+                folder_id = folder_id,
+                user_id = user_id
             )
 
             db.session.add(new_note)
@@ -165,7 +166,7 @@ class NotesList(Resource):
             return {'error': str(e)}, 500
         
 class NotesDetail(Resource):
-    def get_by_id(self, note_id):
+    def get(self, note_id):
         user_id = session.get('user_id')
         if not user_id:
             return {'error': 'Unauthorized'}, 401
@@ -176,10 +177,10 @@ class NotesDetail(Resource):
         
         return note.to_dict(), 200
     
-    def edit_note(self, note_id):
+    def put(self, note_id):
         user_id = session.get('user_id')
         if not user_id:
-            return {'error': 'Unauthorized'}
+            return {'error': 'Unauthorized'}, 401
         
         note = Note.query.filter_by(id=note_id, user_id=user_id).first()
         if not note:
@@ -207,7 +208,7 @@ class NotesDetail(Resource):
             db.session.rollback()
             return {'error': str(e)}, 500
         
-    def delete_note(self, note_id):
+    def delete(self, note_id):
         user_id = session.get('user_id')
         if not user_id:
             return {'error': 'Unauthorized'}, 401
@@ -226,14 +227,16 @@ class NotesDetail(Resource):
             return {'error': str(e)}, 500
         
 class FoldersList(Resource):
-    def get_all_folders(self):
+    def get(self):
         user_id = session.get('user_id')
         if not user_id:
             return {'error': 'Unauthorized'}, 401
         
         folders = Folder.query.filter_by(user_id=user_id).order_by(Folder.created_at).all()
 
-    def new_folder(self):
+        return {'folders': [folder.to_dict() for folder in folders]}, 200
+
+    def post(self):
         user_id = session.get('user_id')
         if not user_id:
             return {'error': 'Unauthorized'}, 401
@@ -265,7 +268,7 @@ class FoldersList(Resource):
             return {'error': str(e)}, 500
         
 class FoldersDetail(Resource):
-    def get_by_id(self, folder_id):
+    def get(self, folder_id):
         user_id = session.get('user_id')
         if not user_id:
             return {'error': 'Unauthorized'}, 401
@@ -274,22 +277,10 @@ class FoldersDetail(Resource):
         if not folder:
             return {'error': 'Folder not found'}, 404
         
-        try:
-            data = request.get_json()
-            if not data:
-                return{'error': 'No data provided'}, 400
-            
-            if 'name' in data:
-                folder.name = data['name']
-            if 'color' in data:
-                folder.color = data['color']
-
-            db.session.commit()
-            return folder.to_dict(), 200
+        return folder.to_dict(), 200
         
-        except Exception as e:
-            db.session.rollback()
-            return {'error': str(e)}, 500
+    def put(self, folder_id):
+        user_id = session.get('user_id')
         
     def delete_folder(self, folder_id):
         user_id = session.get('user_id')
@@ -310,15 +301,15 @@ class FoldersDetail(Resource):
             return {'error': str(e)}, 500
         
 class TagsList(Resource):
-    def get_all_tags(self):
+    def get(self):
         user_id = session.get('user_id')
         if not user_id:
-            return {'error', 'Unauthorized'}, 401
+            return {'error': 'Unauthorized'}, 401
         
         tags = Tag.query.filter_by(user_id=user_id).all()
         return {'tags': [tag.to_dict() for tag in tags]}, 200
     
-    def new_tag(self):
+    def post(self):
         user_id = session.get('user_id')
         if not user_id:
             return {'error': 'Unauthorized'}, 401
@@ -354,7 +345,11 @@ class TagsDetail(Resource):
     def delete(self, tag_id):
         user_id = session.get('user_id')
         if not user_id:
-            return {'error': 'Tag not found'}, 404
+            return {'error': 'Unauthorized'}, 404
+        
+        tag = Tag.query.filter_by(id=tag_id, user_id=user_id).first()
+        if not tag:
+            return {'error': 'Tag not found.'}, 404
         
         try:
             db.session.delete(tag)
@@ -366,7 +361,7 @@ class TagsDetail(Resource):
             return {'error': str(e)}, 500
         
 class NoteTagsManagement(Resource):
-    def add_tag_to_note(self, note_id):
+    def post(self, note_id):
         user_id = session.get('user_id')
         if not user_id:
             return {'error': 'Unauthorized'}, 401
@@ -386,7 +381,7 @@ class NoteTagsManagement(Resource):
             
             tag = Tag.query.filter_by(id=tag_id, user_id=user_id).first()
             if not tag:
-                return {'error', 'Tag not found'}, 404
+                return {'error': 'Tag not found'}, 404
             
             existing_tag = NoteTag.query.filter_by(note_id=note_id, tag_id=tag_id).first()
             if existing_tag:
@@ -402,7 +397,7 @@ class NoteTagsManagement(Resource):
             db.session.rollback()
             return {'error': str(e)}, 500
         
-    def delete_tag(self, note_id, tag_id):
+    def delete(self, note_id, tag_id):
         user_id = session.get('user_id')
         if not user_id:
             return {'error': 'Unauthorized'}, 401
@@ -423,11 +418,10 @@ class NoteTagsManagement(Resource):
         
         except Exception as e:
             db.session.rollback()
-            db.session.commit()
             return {'error': str(e)}, 500
         
 class NotesSearch(Resource):
-    def get_notes(self):
+    def get(self):
         user_id = session.get('user_id')
         if not user_id:
             return {'error': 'Unauthorized'}, 401
