@@ -40,7 +40,7 @@ class User(db.Model):
         
         value = value.strip().lower()
 
-        if not re.match(r'^[@\s]+@[^@\s]+\.[^@\s]+$', value):
+        if not re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', value):
             raise ValueError('Must be a valid email address')
         
         return value
@@ -105,7 +105,7 @@ class Folder(db.Model):
             'name': self.name,
             'color': self.color,
             'user_id': self.user_id,
-            'created_at': self.created_at.isoformat() if self.create_at else None
+            'created_at': self.created_at.isoformat() if self.created_at else None
         }
 
     def __repr__(self):
@@ -162,7 +162,7 @@ class Tag(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
     __table_args__ = (
-        UniqueConstraint('name', 'user_id', name='unique_tag_per_user')
+        UniqueConstraint('name', 'user_id', name='unique_tag_per_user'),
     )
 
     user = relationship('User', back_populates='tags')
@@ -197,7 +197,7 @@ class NoteTag(db.Model):
     note_id = db.Column(db.Integer, db.ForeignKey('notes.id'), primary_key=True)
     tag_id = db.Column(db.Integer, db.ForeignKey('tags.id'), primary_key=True)
 
-    note = relationship("Note", back_populates="note_tags")
-    tag = relationship("Tag", back_populates="note_tags")
+    note = relationship("Note", back_populates="note_tags", overlaps="notes, tags")
+    tag = relationship("Tag", back_populates="note_tags", overlaps="notes, tags")
 
     
