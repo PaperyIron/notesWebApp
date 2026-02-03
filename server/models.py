@@ -22,7 +22,7 @@ class User(db.Model):
     
     @password_hash.setter
     def password_hash(self, password):
-        if len(password < 8):
+        if len(password) < 8:
             raise ValueError('Password must be at least 8 characters long')
         self._password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
 
@@ -49,7 +49,7 @@ class Folder(db.Model):
     created_at = db.Column(db.DateTime, server_default=func.now(), nullable=False)
 
     user = relationship('User', back_populates='folders')
-    notes = relationship('Note', back_populates='folders')
+    note = relationship('Note', back_populates='folders')
 
     def __repr__(self):
         return f'<Folder: {self.name}>'
