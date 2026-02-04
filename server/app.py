@@ -483,7 +483,7 @@ api.add_resource(NoteTagsManagement, '/api/notes/<int:note_id>/tags', '/api/note
 api.add_resource(NotesSearch, '/api/notes/search')
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=5555)
         
         
 
