@@ -9,6 +9,7 @@ export default defineConfig({
       '/signup': 'http://localhost:5555',
       '/check_session': 'http://localhost:5555',
       '/logout': 'http://localhost:5555',
+      '/api': 'http://localhost:5555'
     }
   }
 })
