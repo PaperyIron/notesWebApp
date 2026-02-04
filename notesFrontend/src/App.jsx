@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import LoginPage from '../pages/LoginPage';
+import Dashboard from '../components/Dashboard';
 
 function App() {
   return (
@@ -10,15 +11,6 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
       </Routes>
     </Router>
-  );
-}
-
-function Dashboard() {
-  return (
-    <div>
-      <h1>Dashboard</h1>
-      <p>You're logged in!</p>
-    </div>
   );
 }
 
