@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import CreateFolder from '../components/CreateFolder';
+import CreateNote from '../components/CreateNote';
 
 function Dashboard() {
   const [user, setUser] = useState(null);
@@ -85,6 +87,14 @@ function Dashboard() {
     setSelectedFolder(folderId === selectedFolder ? null : folderId);
   };
 
+  const handleFolderCreated = (newFolder) => {
+    setFolders(prev => [...prev, newFolder]);
+  };
+
+  const handleNoteCreated = (newNote) => {
+    setNotes(prev => [newNote, ...prev]);
+  };
+
   if (isLoading) {
     return <div>Loading...</div>;
   }
@@ -104,6 +114,7 @@ function Dashboard() {
         {/* Sidebar with Folders */}
         <aside>
           <h2>Folders</h2>
+          <CreateFolder onFolderCreated={handleFolderCreated} />
           <ul>
             <li>
               <button onClick={() => handleFolderClick(null)}>
@@ -127,6 +138,8 @@ function Dashboard() {
               ? folders.find(f => f.id === selectedFolder)?.name 
               : 'All Notes'}
           </h2>
+          
+          <CreateNote folders={folders} onNoteCreated={handleNoteCreated} />
           
           {notes.length === 0 ? (
             <p>No notes yet. Create your first note!</p>
