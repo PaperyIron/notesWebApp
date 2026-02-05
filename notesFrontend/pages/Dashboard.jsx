@@ -4,11 +4,13 @@ import CreateFolder from '../components/CreateFolder';
 import CreateNote from '../components/CreateNote';
 import EditNote from '../components/EditNote';
 import SearchNotes from '../components/SearchNotes';
+import TagManager from '../components/TagManager';
 
 function Dashboard() {
   const [user, setUser] = useState(null);
   const [notes, setNotes] = useState([]);
   const [folders, setFolders] = useState([]);
+  const [tags, setTags] = useState([]);
   const [selectedFolder, setSelectedFolder] = useState(null);
   const [editingNote, setEditingNote] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
@@ -22,12 +24,12 @@ function Dashboard() {
     checkSession();
   }, []);
 
-  // Load notes when folder selection changes
+  // Load notes when folder selection changes (FIXED - removed user from dependencies)
   useEffect(() => {
     if (user) {
       loadNotes();
     }
-  }, [selectedFolder, user]);
+  }, [selectedFolder]); // Only re-run when folder changes
 
   const checkSession = async () => {
     try {
@@ -36,6 +38,7 @@ function Dashboard() {
         const userData = await response.json();
         setUser(userData);
         await loadFolders();
+        await loadTags();
         await loadNotes();
       } else {
         navigate('/login');
@@ -57,6 +60,18 @@ function Dashboard() {
       }
     } catch (err) {
       setError('Failed to load folders');
+    }
+  };
+
+  const loadTags = async () => {
+    try {
+      const response = await fetch('/api/tags');
+      if (response.ok) {
+        const data = await response.json();
+        setTags(data.tags);
+      }
+    } catch (err) {
+      setError('Failed to load tags');
     }
   };
 
@@ -123,13 +138,17 @@ function Dashboard() {
     setNotes(results);
     setIsSearching(true);
     setSearchQuery(query);
-    setSelectedFolder(null); // Clear folder filter when searching
+    setSelectedFolder(null);
   };
 
   const handleClearSearch = () => {
     setIsSearching(false);
     setSearchQuery('');
-    loadNotes(); // Reload original notes
+    loadNotes();
+  };
+
+  const handleTagsUpdated = (updatedTags) => {
+    setTags(updatedTags);
   };
 
   if (isLoading) {
@@ -145,35 +164,71 @@ function Dashboard() {
         <button onClick={handleLogout}>Logout</button>
       </header>
 
-      {error && <div>{error}</div>}
+      {error && <div style={{ color: 'red' }}>{error}</div>}
 
-      <div>
-        {/* Sidebar with Folders */}
-        <aside>
+      <div style={{ display: 'flex', gap: '20px' }}>
+        {/* Sidebar with Folders and Tags */}
+        <aside style={{ width: '250px', borderRight: '1px solid #ddd', paddingRight: '20px' }}>
           <h2>Folders</h2>
           <CreateFolder onFolderCreated={handleFolderCreated} />
-          <ul>
+          <ul style={{ listStyle: 'none', padding: 0 }}>
             <li>
-              <button onClick={() => handleFolderClick(null)}>
+              <button 
+                onClick={() => handleFolderClick(null)}
+                style={{
+                  fontWeight: selectedFolder === null ? 'bold' : 'normal',
+                  backgroundColor: selectedFolder === null ? '#e0e0e0' : 'transparent',
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: '8px',
+                  border: 'none',
+                  cursor: 'pointer'
+                }}
+              >
                 All Notes
               </button>
             </li>
             {folders.map(folder => (
               <li key={folder.id}>
-                <button onClick={() => handleFolderClick(folder.id)}>
-                  {folder.name} ({folder.color})
+                <button 
+                  onClick={() => handleFolderClick(folder.id)}
+                  style={{
+                    fontWeight: selectedFolder === folder.id ? 'bold' : 'normal',
+                    backgroundColor: selectedFolder === folder.id ? '#e0e0e0' : 'transparent',
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '8px',
+                    border: 'none',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <span style={{ 
+                    display: 'inline-block',
+                    width: '12px',
+                    height: '12px',
+                    backgroundColor: folder.color,
+                    borderRadius: '50%',
+                    marginRight: '8px'
+                  }}></span>
+                  {folder.name}
                 </button>
               </li>
             ))}
           </ul>
+
+          <hr style={{ margin: '20px 0' }} />
+
+          {/* Tag Manager */}
+          <TagManager onTagsUpdated={handleTagsUpdated} />
         </aside>
 
         {/* Main Content - Notes List or Edit Note */}
-        <main>
+        <main style={{ flex: 1 }}>
           {editingNote ? (
             <EditNote 
               note={editingNote}
               folders={folders}
+              tags={tags}
               onNoteUpdated={handleNoteUpdated}
               onCancel={handleCancelEdit}
             />
@@ -200,17 +255,47 @@ function Dashboard() {
               {notes.length === 0 ? (
                 <p>{isSearching ? 'No notes found.' : 'No notes yet. Create your first note!'}</p>
               ) : (
-                <ul>
+                <ul style={{ listStyle: 'none', padding: 0 }}>
                   {notes.map(note => (
-                    <li key={note.id} onClick={() => handleNoteClick(note)}>
-                      <h3>{note.title}</h3>
-                      <p>{note.content?.substring(0, 100)}...</p>
-                      <small>
+                    <li 
+                      key={note.id} 
+                      onClick={() => handleNoteClick(note)}
+                      style={{
+                        padding: '15px',
+                        margin: '10px 0',
+                        border: '1px solid #ddd',
+                        borderRadius: '5px',
+                        cursor: 'pointer',
+                        transition: 'background-color 0.2s'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f5f5'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                    >
+                      <h3 style={{ margin: '0 0 10px 0' }}>{note.title}</h3>
+                      <p style={{ margin: '0 0 10px 0', color: '#666' }}>
+                        {note.content?.substring(0, 100)}{note.content?.length > 100 ? '...' : ''}
+                      </p>
+                      <small style={{ color: '#999' }}>
                         Updated: {new Date(note.updated_at).toLocaleDateString()}
                       </small>
                       {note.tags && note.tags.length > 0 && (
-                        <div>
-                          Tags: {note.tags.join(', ')}
+                        <div style={{ marginTop: '10px' }}>
+                          {note.tags.map((tag, index) => (
+                            <span 
+                              key={index}
+                              style={{ 
+                                display: 'inline-block',
+                                padding: '3px 8px',
+                                margin: '0 5px 5px 0',
+                                backgroundColor: '#e3f2fd',
+                                borderRadius: '12px',
+                                fontSize: '12px',
+                                color: '#1976d2'
+                              }}
+                            >
+                              {tag}
+                            </span>
+                          ))}
                         </div>
                       )}
                     </li>

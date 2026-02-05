@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-function EditNote({ note, folders, onNoteUpdated, onCancel }) {
+function EditNote({ note, folders, tags, onNoteUpdated, onCancel }) {
   const [formData, setFormData] = useState({
     title: '',
     content: '',
@@ -8,6 +8,8 @@ function EditNote({ note, folders, onNoteUpdated, onCancel }) {
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedTagId, setSelectedTagId] = useState('');
+  const [tagError, setTagError] = useState('');
 
   useEffect(() => {
     if (note) {
@@ -76,12 +78,10 @@ function EditNote({ note, folders, onNoteUpdated, onCancel }) {
       });
 
       if (response.ok) {
-        // 204 response has no content, so don't try to parse JSON
         if (onNoteUpdated) {
           onNoteUpdated(null, note.id);
         }
       } else {
-        // Try to get error message if available
         try {
           const data = await response.json();
           setError(data.error || 'Failed to delete note');
@@ -96,11 +96,81 @@ function EditNote({ note, folders, onNoteUpdated, onCancel }) {
     }
   };
 
+  const handleAddTag = async () => {
+    if (!selectedTagId) {
+      setTagError('Please select a tag');
+      return;
+    }
+
+    setTagError('');
+
+    try {
+      const response = await fetch(`/api/notes/${note.id}/tags`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ tag_id: parseInt(selectedTagId) }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Refresh the note to get updated tags
+        const noteResponse = await fetch(`/api/notes/${note.id}`);
+        if (noteResponse.ok) {
+          const updatedNote = await noteResponse.json();
+          if (onNoteUpdated) {
+            onNoteUpdated(updatedNote);
+          }
+        }
+        setSelectedTagId('');
+      } else {
+        setTagError(data.error || 'Failed to add tag');
+      }
+    } catch (err) {
+      setTagError('Network error. Please try again.');
+    }
+  };
+
+  const handleRemoveTag = async (tagName) => {
+    // Find the tag ID from the tag name
+    const tag = tags.find(t => t.name === tagName);
+    if (!tag) return;
+
+    setTagError('');
+
+    try {
+      const response = await fetch(`/api/notes/${note.id}/tags/${tag.id}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        // Refresh the note to get updated tags
+        const noteResponse = await fetch(`/api/notes/${note.id}`);
+        if (noteResponse.ok) {
+          const updatedNote = await noteResponse.json();
+          if (onNoteUpdated) {
+            onNoteUpdated(updatedNote);
+          }
+        }
+      } else {
+        const data = await response.json();
+        setTagError(data.error || 'Failed to remove tag');
+      }
+    } catch (err) {
+      setTagError('Network error. Please try again.');
+    }
+  };
+
+  // Get available tags (not already on this note)
+  const availableTags = tags.filter(tag => !note.tags.includes(tag.name));
+
   return (
     <div>
       <h3>Edit Note</h3>
       <form onSubmit={handleSubmit}>
-        {error && <div>{error}</div>}
+        {error && <div style={{ color: 'red' }}>{error}</div>}
 
         <div>
           <label htmlFor="edit-note-title">Title</label>
@@ -149,7 +219,92 @@ function EditNote({ note, folders, onNoteUpdated, onCancel }) {
           />
         </div>
 
-        <div>
+        {/* Tag Management Section */}
+        <div style={{ marginTop: '20px', padding: '15px', border: '1px solid #ddd', borderRadius: '5px' }}>
+          <h4>Tags</h4>
+          {tagError && <div style={{ color: 'red', marginBottom: '10px' }}>{tagError}</div>}
+          
+          {/* Current Tags */}
+          <div>
+            <strong>Current Tags:</strong>
+            {note.tags && note.tags.length > 0 ? (
+              <div style={{ marginTop: '5px' }}>
+                {note.tags.map((tagName, index) => (
+                  <span 
+                    key={index}
+                    style={{ 
+                      display: 'inline-block',
+                      padding: '5px 10px',
+                      margin: '5px 5px 5px 0',
+                      backgroundColor: '#e0e0e0',
+                      borderRadius: '15px',
+                      fontSize: '14px'
+                    }}
+                  >
+                    {tagName}
+                    <button 
+                      type="button"
+                      onClick={() => handleRemoveTag(tagName)}
+                      style={{ 
+                        marginLeft: '8px',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: '16px'
+                      }}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p style={{ marginTop: '5px', fontStyle: 'italic' }}>No tags yet</p>
+            )}
+          </div>
+
+          {/* Add Tag */}
+          {availableTags.length > 0 && (
+            <div style={{ marginTop: '15px' }}>
+              <strong>Add Tag:</strong>
+              <div style={{ display: 'flex', gap: '10px', marginTop: '5px' }}>
+                <select
+                  value={selectedTagId}
+                  onChange={(e) => setSelectedTagId(e.target.value)}
+                  style={{ flex: 1 }}
+                >
+                  <option value="">Select a tag</option>
+                  {availableTags.map(tag => (
+                    <option key={tag.id} value={tag.id}>
+                      {tag.name}
+                    </option>
+                  ))}
+                </select>
+                <button 
+                  type="button" 
+                  onClick={handleAddTag}
+                  disabled={!selectedTagId}
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+          )}
+          
+          {availableTags.length === 0 && tags.length > 0 && (
+            <p style={{ marginTop: '10px', fontStyle: 'italic', fontSize: '14px' }}>
+              All available tags are already on this note
+            </p>
+          )}
+
+          {tags.length === 0 && (
+            <p style={{ marginTop: '10px', fontStyle: 'italic', fontSize: '14px' }}>
+              Create tags in the sidebar to organize your notes
+            </p>
+          )}
+        </div>
+
+        <div style={{ marginTop: '20px' }}>
           <button type="submit" disabled={isLoading}>
             {isLoading ? 'Saving...' : 'Save Changes'}
           </button>
