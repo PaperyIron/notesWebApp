@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import CreateFolder from '../components/CreateFolder';
 import CreateNote from '../components/CreateNote';
 import EditNote from '../components/EditNote';
+import SearchNotes from '../components/SearchNotes';
 
 function Dashboard() {
   const [user, setUser] = useState(null);
@@ -10,6 +11,8 @@ function Dashboard() {
   const [folders, setFolders] = useState([]);
   const [selectedFolder, setSelectedFolder] = useState(null);
   const [editingNote, setEditingNote] = useState(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -105,7 +108,7 @@ function Dashboard() {
     if (deletedNoteId) {
       // Note was deleted
       setNotes(prev => prev.filter(n => n.id !== deletedNoteId));
-    } else {
+    } else if (updatedNote) {
       // Note was updated
       setNotes(prev => prev.map(n => n.id === updatedNote.id ? updatedNote : n));
     }
@@ -114,6 +117,19 @@ function Dashboard() {
 
   const handleCancelEdit = () => {
     setEditingNote(null);
+  };
+
+  const handleSearchResults = (results, query) => {
+    setNotes(results);
+    setIsSearching(true);
+    setSearchQuery(query);
+    setSelectedFolder(null); // Clear folder filter when searching
+  };
+
+  const handleClearSearch = () => {
+    setIsSearching(false);
+    setSearchQuery('');
+    loadNotes(); // Reload original notes
   };
 
   if (isLoading) {
@@ -164,15 +180,25 @@ function Dashboard() {
           ) : (
             <>
               <h2>
-                {selectedFolder 
-                  ? folders.find(f => f.id === selectedFolder)?.name 
-                  : 'All Notes'}
+                {isSearching 
+                  ? `Search Results for "${searchQuery}"` 
+                  : selectedFolder 
+                    ? folders.find(f => f.id === selectedFolder)?.name 
+                    : 'All Notes'}
               </h2>
               
-              <CreateNote folders={folders} onNoteCreated={handleNoteCreated} />
+              <SearchNotes 
+                folders={folders}
+                onSearchResults={handleSearchResults}
+                onClearSearch={handleClearSearch}
+              />
+              
+              {!isSearching && (
+                <CreateNote folders={folders} onNoteCreated={handleNoteCreated} />
+              )}
               
               {notes.length === 0 ? (
-                <p>No notes yet. Create your first note!</p>
+                <p>{isSearching ? 'No notes found.' : 'No notes yet. Create your first note!'}</p>
               ) : (
                 <ul>
                   {notes.map(note => (

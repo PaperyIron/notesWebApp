@@ -68,6 +68,7 @@ function EditNote({ note, folders, onNoteUpdated, onCancel }) {
     }
 
     setIsLoading(true);
+    setError('');
 
     try {
       const response = await fetch(`/api/notes/${note.id}`, {
@@ -75,11 +76,18 @@ function EditNote({ note, folders, onNoteUpdated, onCancel }) {
       });
 
       if (response.ok) {
+        // 204 response has no content, so don't try to parse JSON
         if (onNoteUpdated) {
-          onNoteUpdated(null, note.id); // Pass null and the deleted note id
+          onNoteUpdated(null, note.id);
         }
       } else {
-        setError('Failed to delete note');
+        // Try to get error message if available
+        try {
+          const data = await response.json();
+          setError(data.error || 'Failed to delete note');
+        } catch {
+          setError('Failed to delete note');
+        }
       }
     } catch (err) {
       setError('Network error. Please try again.');
