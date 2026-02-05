@@ -3,6 +3,7 @@ from flask_migrate import Migrate
 from flask_restful import Resource, Api
 from config import db, bcrypt
 from models import User, Folder, Note, Tag, NoteTag
+import traceback
 from flask_cors import CORS
 import os
 
@@ -211,7 +212,7 @@ class NotesDetail(Resource):
         except Exception as e:
             db.session.rollback()
             return {'error': str(e)}, 500
-        
+    
     def delete(self, note_id):
         user_id = session.get('user_id')
         if not user_id:
