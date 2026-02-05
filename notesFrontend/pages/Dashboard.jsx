@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import CreateFolder from '../components/CreateFolder';
 import CreateNote from '../components/CreateNote';
+import EditNote from '../components/EditNote';
 
 function Dashboard() {
   const [user, setUser] = useState(null);
   const [notes, setNotes] = useState([]);
   const [folders, setFolders] = useState([]);
   const [selectedFolder, setSelectedFolder] = useState(null);
+  const [editingNote, setEditingNote] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -95,6 +97,25 @@ function Dashboard() {
     setNotes(prev => [newNote, ...prev]);
   };
 
+  const handleNoteClick = (note) => {
+    setEditingNote(note);
+  };
+
+  const handleNoteUpdated = (updatedNote, deletedNoteId) => {
+    if (deletedNoteId) {
+      // Note was deleted
+      setNotes(prev => prev.filter(n => n.id !== deletedNoteId));
+    } else {
+      // Note was updated
+      setNotes(prev => prev.map(n => n.id === updatedNote.id ? updatedNote : n));
+    }
+    setEditingNote(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingNote(null);
+  };
+
   if (isLoading) {
     return <div>Loading...</div>;
   }
@@ -131,35 +152,46 @@ function Dashboard() {
           </ul>
         </aside>
 
-        {/* Main Content - Notes List */}
+        {/* Main Content - Notes List or Edit Note */}
         <main>
-          <h2>
-            {selectedFolder 
-              ? folders.find(f => f.id === selectedFolder)?.name 
-              : 'All Notes'}
-          </h2>
-          
-          <CreateNote folders={folders} onNoteCreated={handleNoteCreated} />
-          
-          {notes.length === 0 ? (
-            <p>No notes yet. Create your first note!</p>
+          {editingNote ? (
+            <EditNote 
+              note={editingNote}
+              folders={folders}
+              onNoteUpdated={handleNoteUpdated}
+              onCancel={handleCancelEdit}
+            />
           ) : (
-            <ul>
-              {notes.map(note => (
-                <li key={note.id}>
-                  <h3>{note.title}</h3>
-                  <p>{note.content?.substring(0, 100)}...</p>
-                  <small>
-                    Updated: {new Date(note.updated_at).toLocaleDateString()}
-                  </small>
-                  {note.tags && note.tags.length > 0 && (
-                    <div>
-                      Tags: {note.tags.join(', ')}
-                    </div>
-                  )}
-                </li>
-              ))}
-            </ul>
+            <>
+              <h2>
+                {selectedFolder 
+                  ? folders.find(f => f.id === selectedFolder)?.name 
+                  : 'All Notes'}
+              </h2>
+              
+              <CreateNote folders={folders} onNoteCreated={handleNoteCreated} />
+              
+              {notes.length === 0 ? (
+                <p>No notes yet. Create your first note!</p>
+              ) : (
+                <ul>
+                  {notes.map(note => (
+                    <li key={note.id} onClick={() => handleNoteClick(note)}>
+                      <h3>{note.title}</h3>
+                      <p>{note.content?.substring(0, 100)}...</p>
+                      <small>
+                        Updated: {new Date(note.updated_at).toLocaleDateString()}
+                      </small>
+                      {note.tags && note.tags.length > 0 && (
+                        <div>
+                          Tags: {note.tags.join(', ')}
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
           )}
         </main>
       </div>
