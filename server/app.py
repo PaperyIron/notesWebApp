@@ -54,7 +54,7 @@ def signup():
         return jsonify({'error': str(e)}), 422
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-    
+
 @app.route('/login', methods=['POST'])
 def login():
     try:
@@ -103,6 +103,7 @@ class NotesList(Resource):
         if not user_id:
             return {'error': 'Unauthorized'}, 401
 
+        # Pagination so that more notes will load on scroll
         limit = request.args.get('limit', 10, type=int)
         offset = request.args.get('offset', 0, type=int)
         folder_id = request.args.get('folder_id', type=int)
@@ -176,12 +177,14 @@ class NotesDetail(Resource):
         if not user_id:
             return {'error': 'Unauthorized'}, 401
         
+        # Get specific note from user
         note = Note.query.filter_by(id=note_id, user_id=user_id).first()
         if not note:
             return {'error': 'Note not found'}, 404
         
         return note.to_dict(), 200
     
+    # Ability to edit notes
     def put(self, note_id):
         user_id = session.get('user_id')
         if not user_id:
@@ -237,6 +240,7 @@ class FoldersList(Resource):
         if not user_id:
             return {'error': 'Unauthorized'}, 401
         
+        # Get all folders and organize by created date
         folders = Folder.query.filter_by(user_id=user_id).order_by(Folder.created_at).all()
 
         return {'folders': [folder.to_dict() for folder in folders]}, 200
@@ -486,6 +490,7 @@ api.add_resource(TagsDetail, '/api/tags/<int:tag_id>')
 api.add_resource(NoteTagsManagement, '/api/notes/<int:note_id>/tags', '/api/notes/<int:note_id>/tags/<int:tag_id>')
 api.add_resource(NotesSearch, '/api/notes/search')
 
+# Server runs on port 5555
 if __name__ == '__main__':
     app.run(debug=True, port=5555)
         
