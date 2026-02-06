@@ -103,7 +103,7 @@ class NotesList(Resource):
         if not user_id:
             return {'error': 'Unauthorized'}, 401
 
-        limit = request.args.get('limit', 20, type=int)
+        limit = request.args.get('limit', 10, type=int)
         offset = request.args.get('offset', 0, type=int)
         folder_id = request.args.get('folder_id', type=int)
 

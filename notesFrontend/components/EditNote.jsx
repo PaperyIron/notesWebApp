@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 
 function EditNote({ note, folders, tags, onNoteUpdated, onCancel }) {
+  // Form data
   const [formData, setFormData] = useState({
     title: '',
     content: '',
@@ -11,6 +12,7 @@ function EditNote({ note, folders, tags, onNoteUpdated, onCancel }) {
   const [selectedTagId, setSelectedTagId] = useState('');
   const [tagError, setTagError] = useState('');
 
+  // Load note data when component loads
   useEffect(() => {
     if (note) {
       setFormData({
@@ -21,6 +23,7 @@ function EditNote({ note, folders, tags, onNoteUpdated, onCancel }) {
     }
   }, [note]);
 
+  // Handle input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -30,6 +33,7 @@ function EditNote({ note, folders, tags, onNoteUpdated, onCancel }) {
     if (error) setError('');
   };
 
+  // Save changes to the note
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -64,6 +68,7 @@ function EditNote({ note, folders, tags, onNoteUpdated, onCancel }) {
     }
   };
 
+  // Delete the note
   const handleDelete = async () => {
     if (!window.confirm('Are you sure you want to delete this note?')) {
       return;
@@ -96,6 +101,7 @@ function EditNote({ note, folders, tags, onNoteUpdated, onCancel }) {
     }
   };
 
+  // Add a tag to the note
   const handleAddTag = async () => {
     if (!selectedTagId) {
       setTagError('Please select a tag');
@@ -116,7 +122,7 @@ function EditNote({ note, folders, tags, onNoteUpdated, onCancel }) {
       const data = await response.json();
 
       if (response.ok) {
-        // Refresh the note to get updated tags
+        // Reload the note to get updated tags
         const noteResponse = await fetch(`/api/notes/${note.id}`);
         if (noteResponse.ok) {
           const updatedNote = await noteResponse.json();
@@ -133,8 +139,9 @@ function EditNote({ note, folders, tags, onNoteUpdated, onCancel }) {
     }
   };
 
+  // Remove a tag from the note
   const handleRemoveTag = async (tagName) => {
-    // Find the tag ID from the tag name
+    // Find the tag by name
     const tag = tags.find(t => t.name === tagName);
     if (!tag) return;
 
@@ -146,7 +153,7 @@ function EditNote({ note, folders, tags, onNoteUpdated, onCancel }) {
       });
 
       if (response.ok) {
-        // Refresh the note to get updated tags
+        // Reload the note to get updated tags
         const noteResponse = await fetch(`/api/notes/${note.id}`);
         if (noteResponse.ok) {
           const updatedNote = await noteResponse.json();
@@ -163,16 +170,20 @@ function EditNote({ note, folders, tags, onNoteUpdated, onCancel }) {
     }
   };
 
-  // Get available tags (not already on this note)
+  // Get tags that aren't already on this note
   const availableTags = tags.filter(tag => !note.tags.includes(tag.name));
 
   return (
-    <div>
-      <h3>Edit Note</h3>
+    <div className="card">
+      <div className="edit-note-header">
+        <h3>Edit Note</h3>
+      </div>
+      
       <form onSubmit={handleSubmit}>
-        {error && <div style={{ color: 'red' }}>{error}</div>}
+        {error && <div className="error-message">{error}</div>}
 
-        <div>
+        {/* Title input */}
+        <div className="form-group">
           <label htmlFor="edit-note-title">Title</label>
           <input
             type="text"
@@ -187,7 +198,8 @@ function EditNote({ note, folders, tags, onNoteUpdated, onCancel }) {
           />
         </div>
 
-        <div>
+        {/* Folder dropdown */}
+        <div className="form-group">
           <label htmlFor="edit-note-folder">Folder</label>
           <select
             id="edit-note-folder"
@@ -206,7 +218,8 @@ function EditNote({ note, folders, tags, onNoteUpdated, onCancel }) {
           </select>
         </div>
 
-        <div>
+        {/* Content textarea */}
+        <div className="form-group">
           <label htmlFor="edit-note-content">Content</label>
           <textarea
             id="edit-note-content"
@@ -214,44 +227,27 @@ function EditNote({ note, folders, tags, onNoteUpdated, onCancel }) {
             value={formData.content}
             onChange={handleChange}
             placeholder="Write your note here..."
-            rows={15}
+            rows={12}
             disabled={isLoading}
           />
         </div>
 
-        {/* Tag Management Section */}
-        <div style={{ marginTop: '20px', padding: '15px', border: '1px solid #ddd', borderRadius: '5px' }}>
-          <h4>Tags</h4>
-          {tagError && <div style={{ color: 'red', marginBottom: '10px' }}>{tagError}</div>}
-          
-          {/* Current Tags */}
-          <div>
+        {/* TAG MANAGEMENT SECTION */}
+        <div className="tag-management">
+          <h4>🏷️ Tags</h4>
+          {tagError && <div className="error-message">{tagError}</div>}
+
+          {/* Show current tags */}
+          <div className="tag-section">
             <strong>Current Tags:</strong>
             {note.tags && note.tags.length > 0 ? (
-              <div style={{ marginTop: '5px' }}>
+              <div className="tag-list">
                 {note.tags.map((tagName, index) => (
-                  <span 
-                    key={index}
-                    style={{ 
-                      display: 'inline-block',
-                      padding: '5px 10px',
-                      margin: '5px 5px 5px 0',
-                      backgroundColor: '#e0e0e0',
-                      borderRadius: '15px',
-                      fontSize: '14px'
-                    }}
-                  >
+                  <span key={index} className="tag">
                     {tagName}
-                    <button 
+                    <button
                       type="button"
                       onClick={() => handleRemoveTag(tagName)}
-                      style={{ 
-                        marginLeft: '8px',
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        fontSize: '16px'
-                      }}
                     >
                       ×
                     </button>
@@ -259,19 +255,18 @@ function EditNote({ note, folders, tags, onNoteUpdated, onCancel }) {
                 ))}
               </div>
             ) : (
-              <p style={{ marginTop: '5px', fontStyle: 'italic' }}>No tags yet</p>
+              <p className="tag-info-text">No tags yet</p>
             )}
           </div>
 
-          {/* Add Tag */}
+          {/* Add new tag */}
           {availableTags.length > 0 && (
-            <div style={{ marginTop: '15px' }}>
+            <div className="tag-section">
               <strong>Add Tag:</strong>
-              <div style={{ display: 'flex', gap: '10px', marginTop: '5px' }}>
+              <div className="tag-add-form">
                 <select
                   value={selectedTagId}
                   onChange={(e) => setSelectedTagId(e.target.value)}
-                  style={{ flex: 1 }}
                 >
                   <option value="">Select a tag</option>
                   {availableTags.map(tag => (
@@ -280,39 +275,58 @@ function EditNote({ note, folders, tags, onNoteUpdated, onCancel }) {
                     </option>
                   ))}
                 </select>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={handleAddTag}
                   disabled={!selectedTagId}
+                  className="btn-primary btn-small"
                 >
                   Add
                 </button>
               </div>
             </div>
           )}
-          
+
+          {/* Messages when no tags available */}
           {availableTags.length === 0 && tags.length > 0 && (
-            <p style={{ marginTop: '10px', fontStyle: 'italic', fontSize: '14px' }}>
-              All available tags are already on this note
+            <p className="tag-info-text">
+              All tags are already on this note
             </p>
           )}
-
           {tags.length === 0 && (
-            <p style={{ marginTop: '10px', fontStyle: 'italic', fontSize: '14px' }}>
-              Create tags in the sidebar to organize your notes
+            <p className="tag-info-text">
+              Create tags in the sidebar first
             </p>
           )}
         </div>
 
-        <div style={{ marginTop: '20px' }}>
-          <button type="submit" disabled={isLoading}>
+        {/* Action buttons */}
+        <div className="flex gap-10">
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="btn-primary"
+            style={{flex: 2}}
+          >
             {isLoading ? 'Saving...' : 'Save Changes'}
           </button>
-          <button type="button" onClick={onCancel} disabled={isLoading}>
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isLoading}
+            className="btn-secondary"
+            style={{flex: 1}}
+          >
             Cancel
           </button>
-          <button type="button" onClick={handleDelete} disabled={isLoading}>
-            Delete Note
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={isLoading}
+            className="btn-danger"
+            style={{flex: 1}}
+          >
+            Delete
           </button>
         </div>
       </form>
