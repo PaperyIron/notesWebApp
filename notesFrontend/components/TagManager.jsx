@@ -1,16 +1,19 @@
 import { useState, useEffect } from 'react';
 
 function TagManager({ onTagsUpdated }) {
+  // State for tags
   const [tags, setTags] = useState([]);
   const [newTagName, setNewTagName] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(false); // Show/hide form
 
+  // Load tags when component loads
   useEffect(() => {
     loadTags();
   }, []);
 
+  // Load all tags from API
   const loadTags = async () => {
     try {
       const response = await fetch('/api/tags');
@@ -26,10 +29,12 @@ function TagManager({ onTagsUpdated }) {
     }
   };
 
+  // Create a new tag
   const handleCreateTag = async (e) => {
     e.preventDefault();
     setError('');
     
+    // Make sure tag name is not empty
     if (!newTagName.trim()) {
       setError('Tag name is required');
       return;
@@ -49,11 +54,13 @@ function TagManager({ onTagsUpdated }) {
       const data = await response.json();
 
       if (response.ok) {
-        setTags(prev => [...prev, data]);
+        // Success! Add to list and reset form
+        const updatedTags = [...tags, data];
+        setTags(updatedTags);
         setNewTagName('');
         setShowForm(false);
         if (onTagsUpdated) {
-          onTagsUpdated([...tags, data]);
+          onTagsUpdated(updatedTags);
         }
       } else {
         setError(data.error || 'Failed to create tag');
@@ -65,6 +72,7 @@ function TagManager({ onTagsUpdated }) {
     }
   };
 
+  // Delete a tag
   const handleDeleteTag = async (tagId) => {
     if (!window.confirm('Delete this tag? It will be removed from all notes.')) {
       return;
@@ -76,6 +84,7 @@ function TagManager({ onTagsUpdated }) {
       });
 
       if (response.ok) {
+        // Remove from list
         const updatedTags = tags.filter(t => t.id !== tagId);
         setTags(updatedTags);
         if (onTagsUpdated) {
@@ -92,16 +101,28 @@ function TagManager({ onTagsUpdated }) {
 
   return (
     <div>
-      <h3>Tags</h3>
+      <h2 className="sidebar-title">Tags</h2>
       
-      {error && <div style={{ color: 'red' }}>{error}</div>}
+      {/* Show error if any */}
+      {error && (
+        <div className="error-message" style={{fontSize: '12px', padding: '8px'}}>
+          {error}
+        </div>
+      )}
 
+      {/* Show button or form */}
       {!showForm ? (
-        <button onClick={() => setShowForm(true)}>
+        <button
+          onClick={() => setShowForm(true)}
+          className="btn-primary btn-small btn-full-width mb-10"
+        >
           + New Tag
         </button>
       ) : (
-        <form onSubmit={handleCreateTag}>
+        <form
+          onSubmit={handleCreateTag}
+          className="create-form-container"
+        >
           <input
             type="text"
             value={newTagName}
@@ -109,40 +130,49 @@ function TagManager({ onTagsUpdated }) {
             placeholder="Tag name"
             maxLength={50}
             disabled={isLoading}
+            style={{marginBottom: '8px', padding: '8px', fontSize: '13px'}}
           />
-          <button type="submit" disabled={isLoading}>
-            {isLoading ? 'Creating...' : 'Create'}
-          </button>
-          <button 
-            type="button" 
-            onClick={() => {
-              setShowForm(false);
-              setNewTagName('');
-              setError('');
-            }} 
-            disabled={isLoading}
-          >
-            Cancel
-          </button>
+          <div className="form-buttons">
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="btn-primary btn-small"
+            >
+              {isLoading ? 'Creating...' : 'Create'}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowForm(false);
+                setNewTagName('');
+                setError('');
+              }}
+              disabled={isLoading}
+              className="btn-secondary btn-small"
+            >
+              Cancel
+            </button>
+          </div>
         </form>
       )}
 
+      {/* Show tags list or empty message */}
       {tags.length === 0 ? (
-        <p>No tags yet. Create your first tag!</p>
+        <p className="tag-list-empty">No tags yet</p>
       ) : (
-        <ul>
+        <div>
           {tags.map(tag => (
-            <li key={tag.id}>
-              <span>{tag.name}</span>
-              <button 
+            <div key={tag.id} className="tag-item">
+              <span>• {tag.name}</span>
+              <button
                 onClick={() => handleDeleteTag(tag.id)}
-                style={{ marginLeft: '10px' }}
+                className="tag-delete-btn"
               >
-                Delete
+                ×
               </button>
-            </li>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );

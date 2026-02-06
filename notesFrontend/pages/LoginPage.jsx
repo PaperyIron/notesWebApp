@@ -13,44 +13,59 @@ function LoginPage() {
   };
 
   return (
-    <div>
-      <div>
-        <h1>Notes</h1>
-      </div>
+    <div className="login-page">
+      {/* Main container */}
+      <div className="login-container">
+        
+        {/* Header */}
+        <div className="login-header">
+          <h1>NoteTaker</h1>
+          <p>Simple Notes</p>
+        </div>
 
-      <div>
-        <button onClick={() => setIsLogin(true)}>
-          Sign In
-        </button>
-        <button onClick={() => setIsLogin(false)}>
-          Sign Up
-        </button>
-      </div>
+        {/* Tab buttons */}
+        <div className="login-tabs">
+          <button
+            onClick={() => setIsLogin(true)}
+            className={`login-tab ${isLogin ? 'active' : ''}`}
+          >
+            Sign In
+          </button>
+          <button
+            onClick={() => setIsLogin(false)}
+            className={`login-tab ${!isLogin ? 'active' : ''}`}
+          >
+            Sign Up
+          </button>
+        </div>
 
-      <div>
-        {isLogin ? (
-          <LoginForm onSuccess={handleSuccess} />
-        ) : (
-          <SignupForm onSuccess={handleSuccess} />
-        )}
-      </div>
+        {/* Form area */}
+        <div className="login-form-area">
+          {isLogin ? (
+            <LoginForm onSuccess={handleSuccess} />
+          ) : (
+            <SignupForm onSuccess={handleSuccess} />
+          )}
+        </div>
 
-      <div>
-        {isLogin ? (
-          <p>
-            Don't have an account?{' '}
-            <button onClick={() => setIsLogin(false)}>
-              Create one
-            </button>
-          </p>
-        ) : (
-          <p>
-            Already have an account?{' '}
-            <button onClick={() => setIsLogin(true)}>
-              Sign in
-            </button>
-          </p>
-        )}
+        {/* Footer */}
+        <div className="login-footer">
+          {isLogin ? (
+            <span>
+              Don't have an account?{' '}
+              <button onClick={() => setIsLogin(false)}>
+                Create one
+              </button>
+            </span>
+          ) : (
+            <span>
+              Already have an account?{' '}
+              <button onClick={() => setIsLogin(true)}>
+                Sign in
+              </button>
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );

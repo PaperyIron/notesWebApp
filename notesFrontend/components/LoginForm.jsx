@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 function LoginForm({ onSuccess }) {
+  // State for form data
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -8,15 +9,17 @@ function LoginForm({ onSuccess }) {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  // Handle input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
-    if (error) setError('');
+    if (error) setError(''); // Clear error when user types
   };
 
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -47,9 +50,11 @@ function LoginForm({ onSuccess }) {
 
   return (
     <form onSubmit={handleSubmit}>
-      {error && <div>{error}</div>}
+      {/* Show error if exists */}
+      {error && <div className="error-message">{error}</div>}
 
-      <div>
+      {/* Username field */}
+      <div className="form-group">
         <label htmlFor="login-username">Username</label>
         <input
           type="text"
@@ -63,7 +68,8 @@ function LoginForm({ onSuccess }) {
         />
       </div>
 
-      <div>
+      {/* Password field */}
+      <div className="form-group">
         <label htmlFor="login-password">Password</label>
         <input
           type="password"
@@ -77,7 +83,12 @@ function LoginForm({ onSuccess }) {
         />
       </div>
 
-      <button type="submit" disabled={isLoading}>
+      {/* Submit button */}
+      <button 
+        type="submit" 
+        disabled={isLoading}
+        className="btn-primary btn-full-width"
+      >
         {isLoading ? 'Signing in...' : 'Sign In'}
       </button>
     </form>

@@ -7,6 +7,7 @@ import SearchNotes from '../components/SearchNotes';
 import TagManager from '../components/TagManager';
 
 function Dashboard() {
+  // All our state variables
   const [user, setUser] = useState(null);
   const [notes, setNotes] = useState([]);
   const [folders, setFolders] = useState([]);
@@ -19,18 +20,19 @@ function Dashboard() {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  // Check session and load initial data
+  // Check if user is logged in when page loads
   useEffect(() => {
     checkSession();
   }, []);
 
-  // Load notes when folder selection changes (FIXED - removed user from dependencies)
+  // Load notes when folder changes
   useEffect(() => {
     if (user) {
       loadNotes();
     }
-  }, [selectedFolder]); // Only re-run when folder changes
+  }, [selectedFolder]);
 
+  // Check if user is logged in
   const checkSession = async () => {
     try {
       const response = await fetch('/check_session');
@@ -51,6 +53,7 @@ function Dashboard() {
     }
   };
 
+  // Load all folders
   const loadFolders = async () => {
     try {
       const response = await fetch('/api/folders');
@@ -63,6 +66,7 @@ function Dashboard() {
     }
   };
 
+  // Load all tags
   const loadTags = async () => {
     try {
       const response = await fetch('/api/tags');
@@ -75,6 +79,7 @@ function Dashboard() {
     }
   };
 
+  // Load notes (all or by folder)
   const loadNotes = async () => {
     try {
       let url = '/api/notes?limit=20';
@@ -92,6 +97,7 @@ function Dashboard() {
     }
   };
 
+  // Logout user
   const handleLogout = async () => {
     try {
       const response = await fetch('/logout', { method: 'DELETE' });
@@ -103,22 +109,28 @@ function Dashboard() {
     }
   };
 
+  // Select a folder
   const handleFolderClick = (folderId) => {
     setSelectedFolder(folderId === selectedFolder ? null : folderId);
+    setIsSearching(false);
   };
 
+  // When a new folder is created
   const handleFolderCreated = (newFolder) => {
     setFolders(prev => [...prev, newFolder]);
   };
 
+  // When a new note is created
   const handleNoteCreated = (newNote) => {
     setNotes(prev => [newNote, ...prev]);
   };
 
+  // When user clicks on a note to edit
   const handleNoteClick = (note) => {
     setEditingNote(note);
   };
 
+  // When note is updated or deleted
   const handleNoteUpdated = (updatedNote, deletedNoteId) => {
     if (deletedNoteId) {
       // Note was deleted
@@ -130,10 +142,12 @@ function Dashboard() {
     setEditingNote(null);
   };
 
+  // Cancel editing note
   const handleCancelEdit = () => {
     setEditingNote(null);
   };
 
+  // When search results come back
   const handleSearchResults = (results, query) => {
     setNotes(results);
     setIsSearching(true);
@@ -141,91 +155,88 @@ function Dashboard() {
     setSelectedFolder(null);
   };
 
+  // Clear search
   const handleClearSearch = () => {
     setIsSearching(false);
     setSearchQuery('');
     loadNotes();
   };
 
+  // When tags are updated
   const handleTagsUpdated = (updatedTags) => {
     setTags(updatedTags);
   };
 
+  // Show loading message while checking session
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <div className="loading">Loading...</div>;
   }
 
   return (
-    <div>
-      {/* Header */}
-      <header>
-        <h1>Notes</h1>
-        {user && <p>Welcome, {user.username}!</p>}
-        <button onClick={handleLogout}>Logout</button>
+    <div className="dashboard">
+      
+      {/* TOP HEADER BAR */}
+      <header className="dashboard-header">
+        <div>
+          <h1>NoteTaker</h1>
+          {user && <span className="user-info">Welcome, {user.username}!</span>}
+        </div>
+        <button onClick={handleLogout} className="btn-secondary">
+          Logout
+        </button>
       </header>
 
-      {error && <div style={{ color: 'red' }}>{error}</div>}
+      {/* Error message if any */}
+      {error && <div className="error-message" style={{margin: '20px'}}>{error}</div>}
 
-      <div style={{ display: 'flex', gap: '20px' }}>
-        {/* Sidebar with Folders and Tags */}
-        <aside style={{ width: '250px', borderRight: '1px solid #ddd', paddingRight: '20px' }}>
-          <h2>Folders</h2>
-          <CreateFolder onFolderCreated={handleFolderCreated} />
-          <ul style={{ listStyle: 'none', padding: 0 }}>
-            <li>
-              <button 
-                onClick={() => handleFolderClick(null)}
-                style={{
-                  fontWeight: selectedFolder === null ? 'bold' : 'normal',
-                  backgroundColor: selectedFolder === null ? '#e0e0e0' : 'transparent',
-                  width: '100%',
-                  textAlign: 'left',
-                  padding: '8px',
-                  border: 'none',
-                  cursor: 'pointer'
-                }}
-              >
-                All Notes
-              </button>
-            </li>
+      {/* MAIN CONTENT AREA */}
+      <div className="dashboard-content">
+        
+        {/* LEFT SIDEBAR */}
+        <aside className="sidebar">
+          {/* FOLDERS SECTION */}
+          <div className="sidebar-section">
+            <h2 className="sidebar-title">Folders</h2>
+            <CreateFolder onFolderCreated={handleFolderCreated} />
+            
+            {/* All Notes button */}
+            <button
+              onClick={() => handleFolderClick(null)}
+              className={`folder-button all-notes ${selectedFolder === null ? 'active' : ''}`}
+            >
+              All Notes
+            </button>
+
+            {/* List of folders */}
             {folders.map(folder => (
-              <li key={folder.id}>
-                <button 
-                  onClick={() => handleFolderClick(folder.id)}
+              <button
+                key={folder.id}
+                onClick={() => handleFolderClick(folder.id)}
+                className={`folder-button ${selectedFolder === folder.id ? 'active' : ''}`}
+              >
+                <span 
+                  className="folder-color-dot"
                   style={{
-                    fontWeight: selectedFolder === folder.id ? 'bold' : 'normal',
-                    backgroundColor: selectedFolder === folder.id ? '#e0e0e0' : 'transparent',
-                    width: '100%',
-                    textAlign: 'left',
-                    padding: '8px',
-                    border: 'none',
-                    cursor: 'pointer'
+                    backgroundColor: selectedFolder === folder.id ? 'white' : folder.color
                   }}
-                >
-                  <span style={{ 
-                    display: 'inline-block',
-                    width: '12px',
-                    height: '12px',
-                    backgroundColor: folder.color,
-                    borderRadius: '50%',
-                    marginRight: '8px'
-                  }}></span>
-                  {folder.name}
-                </button>
-              </li>
+                ></span>
+                {folder.name}
+              </button>
             ))}
-          </ul>
+          </div>
 
-          <hr style={{ margin: '20px 0' }} />
+          {/* Divider line */}
+          <hr />
 
-          {/* Tag Manager */}
+          {/* TAGS SECTION */}
           <TagManager onTagsUpdated={handleTagsUpdated} />
         </aside>
 
-        {/* Main Content - Notes List or Edit Note */}
-        <main style={{ flex: 1 }}>
+        {/* MAIN CONTENT AREA */}
+        <main className="main-content">
+          {/* If editing a note, show edit form */}
           {editingNote ? (
-            <EditNote 
+            <EditNote
               note={editingNote}
               folders={folders}
               tags={tags}
@@ -233,74 +244,65 @@ function Dashboard() {
               onCancel={handleCancelEdit}
             />
           ) : (
+            // Otherwise show notes list
             <>
-              <h2>
-                {isSearching 
-                  ? `Search Results for "${searchQuery}"` 
-                  : selectedFolder 
-                    ? folders.find(f => f.id === selectedFolder)?.name 
+              {/* Page title */}
+              <h2 className="page-title">
+                {isSearching
+                  ? `Search Results: "${searchQuery}"`
+                  : selectedFolder
+                    ? folders.find(f => f.id === selectedFolder)?.name
                     : 'All Notes'}
               </h2>
-              
-              <SearchNotes 
+
+              {/* Search bar */}
+              <SearchNotes
                 folders={folders}
                 onSearchResults={handleSearchResults}
                 onClearSearch={handleClearSearch}
               />
-              
+
+              {/* Create note button (only when not searching) */}
               {!isSearching && (
                 <CreateNote folders={folders} onNoteCreated={handleNoteCreated} />
               )}
-              
+
+              {/* Notes list or empty message */}
               {notes.length === 0 ? (
-                <p>{isSearching ? 'No notes found.' : 'No notes yet. Create your first note!'}</p>
+                <div className="empty-state">
+                  <p>{isSearching ? 'No notes found' : 'No notes yet'}</p>
+                  <p className="subtitle">
+                    {isSearching ? 'Try a different search' : 'Create your first note!'}
+                  </p>
+                </div>
               ) : (
-                <ul style={{ listStyle: 'none', padding: 0 }}>
+                <div className="notes-grid">
                   {notes.map(note => (
-                    <li 
-                      key={note.id} 
+                    <div
+                      key={note.id}
                       onClick={() => handleNoteClick(note)}
-                      style={{
-                        padding: '15px',
-                        margin: '10px 0',
-                        border: '1px solid #ddd',
-                        borderRadius: '5px',
-                        cursor: 'pointer',
-                        transition: 'background-color 0.2s'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f5f5'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                      className="note-card"
                     >
-                      <h3 style={{ margin: '0 0 10px 0' }}>{note.title}</h3>
-                      <p style={{ margin: '0 0 10px 0', color: '#666' }}>
+                      <h3>{note.title}</h3>
+                      <p>
                         {note.content?.substring(0, 100)}{note.content?.length > 100 ? '...' : ''}
                       </p>
-                      <small style={{ color: '#999' }}>
-                        Updated: {new Date(note.updated_at).toLocaleDateString()}
-                      </small>
+                      <p className="note-date">
+                        {new Date(note.updated_at).toLocaleDateString()}
+                      </p>
+                      {/* Show tags if note has any */}
                       {note.tags && note.tags.length > 0 && (
-                        <div style={{ marginTop: '10px' }}>
+                        <div className="note-tags">
                           {note.tags.map((tag, index) => (
-                            <span 
-                              key={index}
-                              style={{ 
-                                display: 'inline-block',
-                                padding: '3px 8px',
-                                margin: '0 5px 5px 0',
-                                backgroundColor: '#e3f2fd',
-                                borderRadius: '12px',
-                                fontSize: '12px',
-                                color: '#1976d2'
-                              }}
-                            >
+                            <span key={index} className="tag">
                               {tag}
                             </span>
                           ))}
                         </div>
                       )}
-                    </li>
+                    </div>
                   ))}
-                </ul>
+                </div>
               )}
             </>
           )}

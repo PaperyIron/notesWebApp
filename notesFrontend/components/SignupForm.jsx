@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 function SignupForm({ onSuccess }) {
+  // State for form data
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -10,25 +11,28 @@ function SignupForm({ onSuccess }) {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  // Handle input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
-    if (error) setError('');
+    if (error) setError(''); // Clear error when user types
   };
 
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    // Client-side validation
+    // Check if passwords match
     if (formData.password !== formData.password_confirmation) {
       setError('Passwords do not match');
       return;
     }
 
+    // Check password length
     if (formData.password.length < 8) {
       setError('Password must be at least 8 characters');
       return;
@@ -61,9 +65,11 @@ function SignupForm({ onSuccess }) {
 
   return (
     <form onSubmit={handleSubmit}>
-      {error && <div>{error}</div>}
+      {/* Show error if exists */}
+      {error && <div className="error-message">{error}</div>}
 
-      <div>
+      {/* Username field */}
+      <div className="form-group">
         <label htmlFor="signup-username">Username</label>
         <input
           type="text"
@@ -77,7 +83,8 @@ function SignupForm({ onSuccess }) {
         />
       </div>
 
-      <div>
+      {/* Email field */}
+      <div className="form-group">
         <label htmlFor="signup-email">Email</label>
         <input
           type="email"
@@ -91,7 +98,8 @@ function SignupForm({ onSuccess }) {
         />
       </div>
 
-      <div>
+      {/* Password field */}
+      <div className="form-group">
         <label htmlFor="signup-password">Password</label>
         <input
           type="password"
@@ -99,13 +107,14 @@ function SignupForm({ onSuccess }) {
           name="password"
           value={formData.password}
           onChange={handleChange}
-          placeholder="Create a password (min 8 chars)"
+          placeholder="Create a password (min 8 characters)"
           required
           disabled={isLoading}
         />
       </div>
 
-      <div>
+      {/* Confirm Password field */}
+      <div className="form-group">
         <label htmlFor="signup-password-confirm">Confirm Password</label>
         <input
           type="password"
@@ -119,7 +128,12 @@ function SignupForm({ onSuccess }) {
         />
       </div>
 
-      <button type="submit" disabled={isLoading}>
+      {/* Submit button */}
+      <button 
+        type="submit" 
+        disabled={isLoading}
+        className="btn-primary btn-full-width"
+      >
         {isLoading ? 'Creating account...' : 'Create Account'}
       </button>
     </form>

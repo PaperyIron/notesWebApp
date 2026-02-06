@@ -1,17 +1,20 @@
 import { useState } from 'react';
 
 function SearchNotes({ folders, onSearchResults, onClearSearch }) {
+  // Search state
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFolder, setSelectedFolder] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Perform search
   const handleSearch = async (e) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
     try {
+      // Build the search URL
       let url = `/api/notes/search?q=${encodeURIComponent(searchQuery)}`;
       if (selectedFolder) {
         url += `&folder_id=${selectedFolder}`;
@@ -32,6 +35,7 @@ function SearchNotes({ folders, onSearchResults, onClearSearch }) {
     }
   };
 
+  // Clear search and show all notes
   const handleClear = () => {
     setSearchQuery('');
     setSelectedFolder('');
@@ -39,45 +43,55 @@ function SearchNotes({ folders, onSearchResults, onClearSearch }) {
   };
 
   return (
-    <div>
-      <form onSubmit={handleSearch}>
-        {error && <div>{error}</div>}
+    <div className="card">
+      <form onSubmit={handleSearch} className="search-form">
+        {error && <div className="error-message">{error}</div>}
         
-        <div>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search notes..."
-            disabled={isLoading}
-          />
-        </div>
+        {/* Search input */}
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search notes..."
+          disabled={isLoading}
+          className="search-input"
+        />
 
-        <div>
-          <select
-            value={selectedFolder}
-            onChange={(e) => setSelectedFolder(e.target.value)}
+        {/* Folder filter */}
+        <select
+          value={selectedFolder}
+          onChange={(e) => setSelectedFolder(e.target.value)}
+          disabled={isLoading}
+          className="search-folder-select"
+        >
+          <option value="">All Folders</option>
+          {folders.map(folder => (
+            <option key={folder.id} value={folder.id}>
+              {folder.name}
+            </option>
+          ))}
+        </select>
+
+        {/* Search button */}
+        <button
+          type="submit"
+          disabled={isLoading || !searchQuery.trim()}
+          className="btn-primary"
+        >
+          {isLoading ? 'Searching...' : 'Search'}
+        </button>
+
+        {/* Clear button (only show if there's a search) */}
+        {searchQuery && (
+          <button
+            type="button"
+            onClick={handleClear}
             disabled={isLoading}
+            className="btn-secondary"
           >
-            <option value="">All Folders</option>
-            {folders.map(folder => (
-              <option key={folder.id} value={folder.id}>
-                {folder.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <button type="submit" disabled={isLoading || !searchQuery.trim()}>
-            {isLoading ? 'Searching...' : 'Search'}
+            Clear
           </button>
-          {searchQuery && (
-            <button type="button" onClick={handleClear} disabled={isLoading}>
-              Clear
-            </button>
-          )}
-        </div>
+        )}
       </form>
     </div>
   );
