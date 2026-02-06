@@ -13,10 +13,12 @@ class User(db.Model):
     email = db.Column(db.String, unique=True, nullable=False)
     _password_hash = db.Column(db.String(100), nullable=False)
 
+    # Relationships
     folders = relationship('Folder', back_populates='user', cascade='all, delete-orphan')
     notes = relationship('Note', back_populates='user', cascade='all, delete-orphan')
     tags = relationship('Tag', back_populates='user', cascade='all, delete-orphan')
 
+    #Validations
     @validates('username')
     def validate_username(self, key, value):
         if not value or not value.strip():
@@ -77,9 +79,11 @@ class Folder(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, server_default=func.now(), nullable=False)
 
+    #Relationships
     user = relationship('User', back_populates='folders')
     notes = relationship('Note', back_populates='folder')
 
+    # Validations
     @validates('name')
     def validate_name(self, key, value):
         if not value or not value.strip():
@@ -122,11 +126,13 @@ class Note(db.Model):
     created_at = db.Column(db.DateTime, server_default=func.now(), nullable=False)
     updated_at = db.Column(db.DateTime, server_default=func.now(), onupdate=func.now())
 
+    # Relationships
     user = relationship('User', back_populates='notes')
     folder = relationship('Folder', back_populates='notes')
     note_tags = relationship('NoteTag', back_populates='note', cascade='all, delete-orphan')
     tags = relationship('Tag', secondary='note_tags', back_populates='notes', overlaps='note_tags')
 
+    # Validations
     @validates('title')
     def validate_title(self, key, value):
         if not value or not value.strip():
@@ -161,10 +167,12 @@ class Tag(db.Model):
     name = db.Column(db.String(50), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
+    # Junction table for many to many relationship
     __table_args__ = (
         UniqueConstraint('name', 'user_id', name='unique_tag_per_user'),
     )
 
+    # Relationships
     user = relationship('User', back_populates='tags')
     note_tags = relationship('NoteTag', back_populates='tag', cascade='all, delete-orphan')
     notes = relationship('Note', secondary='note_tags', back_populates='tags', overlaps='note_tags')
@@ -193,7 +201,7 @@ class Tag(db.Model):
 
 class NoteTag(db.Model):
     __tablename__ = 'note_tags'
-
+    
     note_id = db.Column(db.Integer, db.ForeignKey('notes.id'), primary_key=True)
     tag_id = db.Column(db.Integer, db.ForeignKey('tags.id'), primary_key=True)
 

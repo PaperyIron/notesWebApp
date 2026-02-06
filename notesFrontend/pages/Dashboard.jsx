@@ -244,7 +244,6 @@ function Dashboard() {
               onCancel={handleCancelEdit}
             />
           ) : (
-            // Otherwise show notes list
             <>
               {/* Page title */}
               <h2 className="page-title">
